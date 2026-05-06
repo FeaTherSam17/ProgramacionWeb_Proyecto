@@ -1,46 +1,185 @@
 <script setup lang="ts">
+import { marked } from 'marked'
 import type { ContentNavigationItem } from '@nuxt/content'
 import { mapContentNavigation } from '@nuxt/ui/utils/content'
 import { findPageBreadcrumb } from '@nuxt/content/utils'
 
-const route = useRoute()
-
-const { data: page } = await useAsyncData(route.path, () =>
-  queryCollection('blog').path(route.path).first()
-)
-if (!page.value) throw createError({ statusCode: 404, statusMessage: 'Page not found', fatal: true })
-const { data: surround } = await useAsyncData(`${route.path}-surround`, () =>
-  queryCollectionItemSurroundings('blog', route.path, {
-    fields: ['description']
-  })
-)
-
-const navigation = inject<Ref<ContentNavigationItem[]>>('navigation', ref([]))
-const blogNavigation = computed(() => navigation.value.find(item => item.path === '/blog')?.children || [])
-
-const breadcrumb = computed(() => mapContentNavigation(findPageBreadcrumb(blogNavigation?.value, page.value?.path)).map(({ icon, ...link }) => link))
-
-if (page.value.image) {
-  defineOgImage({ url: page.value.image })
-} else {
-  defineOgImageComponent('Blog', {
-    headline: breadcrumb.value.map(item => item.label).join(' > ')
-  }, {
-    fonts: ['Geist:400', 'Geist:600']
-  })
+type PublicPost = {
+  id: number
+  titulo: string
+  slug: string
+  resumen: string | null
+  contenido: string
+  imagen_portada: string | null
+  estado: string
+  publicado_en: string | null
+  creado_en: string
+  etiquetas: string[]
 }
 
-const title = page.value?.seo?.title || page.value?.title
-const description = page.value?.seo?.description || page.value?.description
+type AdjacentPost = {
+  title: string
+  slug: string
+  resumen: string | null
+  image?: string
+  date: string
+}
 
-useSeoMeta({
-  title,
-  description,
-  ogDescription: description,
-  ogTitle: title
+type PublicationPayload = {
+  post: PublicPost | null
+  prev: AdjacentPost | null
+  next: AdjacentPost | null
+}
+
+type DisplayPost = {
+  title: string
+  description: string
+  image?: string
+  date?: string
+  minRead?: number
+  content: string
+  etiquetas: string[]
+  author?: any
+  body?: any
+}
+
+marked.setOptions({
+  gfm: true,
+  breaks: true
 })
 
-const articleLink = computed(() => `${window?.location}`)
+const route = useRoute()
+
+const slug = computed(() => {
+  const value = route.params.slug
+  if (Array.isArray(value)) {
+    return value[value.length - 1] || ''
+  }
+  return String(value || '')
+})
+
+const errorMessage = ref('')
+
+const isValidImageUrl = (value: string | null) => {
+  if (!value) {
+    return false
+  }
+  return /^https?:\/\//i.test(value)
+}
+
+const estimateReadTime = (content: string) => {
+  const words = content.trim().split(/\s+/).filter(Boolean).length
+  const minutes = Math.max(1, Math.ceil(words / 200))
+  return minutes
+}
+
+const toSafeImage = (value: string | null): string | undefined => {
+  if (!value) {
+    return undefined
+  }
+  return isValidImageUrl(value) ? value : undefined
+}
+
+const { data: publication } = await useAsyncData<PublicationPayload>(`publication-${slug.value}`, async () => {
+  if (!slug.value) {
+    return {
+      post: null,
+      prev: null,
+      next: null
+    }
+  }
+
+  try {
+    return await $fetch<PublicationPayload>(`/api/publicaciones/${slug.value}`)
+  } catch (error) {
+    console.error('Error cargando publicacion publica:', error)
+    errorMessage.value = 'No se pudo cargar la publicación.'
+    return {
+      post: null,
+      prev: null,
+      next: null
+    }
+  }
+})
+
+const { data: pageList } = await useAsyncData<any[]>(`blog-pages`, () =>
+  (queryCollection as any)('blog').all()
+)
+
+const page = computed<any>(() => pageList.value?.find((item: any) => item.path === route.path) || null)
+const navigation = inject<Ref<ContentNavigationItem[]>>('navigation', ref([]))
+const blogNavigation = computed(() => navigation.value.find(item => item.path === '/blog')?.children || [])
+const breadcrumb = computed(() => mapContentNavigation(findPageBreadcrumb(blogNavigation?.value, page.value?.path)).map(({ icon, ...link }) => link))
+
+const publicationPost = computed(() => publication.value?.post || null)
+const isPublicationPost = computed(() => Boolean(publicationPost.value))
+const contentPage = computed<any>(() => (page.value ? page.value : null))
+const renderedContent = computed(() => {
+  if (!publicationPost.value?.contenido) {
+    return ''
+  }
+
+  return marked(publicationPost.value.contenido)
+})
+
+const emptyDisplayPost: DisplayPost = {
+  title: '',
+  description: '',
+  content: '',
+  etiquetas: []
+}
+
+const displayPost = computed<DisplayPost>(() => {
+  if (publicationPost.value) {
+    const image = toSafeImage(publicationPost.value.imagen_portada)
+    return {
+      title: publicationPost.value.titulo,
+      description: publicationPost.value.resumen || '',
+      image,
+      date: publicationPost.value.publicado_en || publicationPost.value.creado_en,
+      content: publicationPost.value.contenido || '',
+      etiquetas: publicationPost.value.etiquetas || [],
+      minRead: estimateReadTime(publicationPost.value.contenido || '')
+    }
+  }
+
+  if (page.value) {
+    const image = typeof page.value.image === 'string' ? page.value.image : undefined
+    return {
+      title: page.value.title,
+      description: page.value.description,
+      image,
+      date: page.value.date,
+      minRead: page.value.minRead,
+      author: page.value.author,
+      body: page.value.body,
+      etiquetas: [],
+      content: ''
+    }
+  }
+
+  return emptyDisplayPost
+})
+
+const adjacentPosts = computed(() => {
+  return {
+    prev: publication.value?.prev || null,
+    next: publication.value?.next || null
+  }
+})
+
+const hasDisplayPost = computed(() => Boolean(publicationPost.value || page.value))
+const title = computed(() => displayPost.value?.title || page.value?.title)
+const description = computed(() => displayPost.value?.description || page.value?.description)
+
+useSeoMeta({
+  title: title.value,
+  description: description.value,
+  ogDescription: description.value,
+  ogTitle: title.value
+})
+
+const articleLink = computed(() => useRequestURL().href)
 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('en-US', {
@@ -49,12 +188,16 @@ const formatDate = (dateString: string) => {
     day: 'numeric'
   })
 }
+
+if (!hasDisplayPost.value && !errorMessage.value) {
+  throw createError({ statusCode: 404, statusMessage: 'Page not found', fatal: true })
+}
 </script>
 
 <template>
   <UMain class="mt-20 px-2">
     <UContainer class="relative min-h-screen">
-      <UPage v-if="page">
+      <UPage v-if="hasDisplayPost">
         <ULink
           to="/blog"
           class="text-sm flex items-center gap-1"
@@ -62,43 +205,85 @@ const formatDate = (dateString: string) => {
           <UIcon name="lucide:chevron-left" />
           Blog
         </ULink>
+        <div
+          v-if="errorMessage"
+          class="mt-4 rounded-lg border border-red-300 bg-red-50 dark:bg-red-900/20 px-3 py-2 text-sm text-red-700 dark:text-red-300"
+        >
+          {{ errorMessage }}
+        </div>
         <div class="flex flex-col gap-3 mt-8">
           <div class="flex text-xs text-muted items-center justify-center gap-2">
-            <span v-if="page.date">
-              {{ formatDate(page.date) }}
+            <span v-if="displayPost.date">
+              {{ formatDate(displayPost.date) }}
             </span>
-            <span v-if="page.date && page.minRead">
+            <span v-if="displayPost.date && displayPost.minRead">
               -
             </span>
-            <span v-if="page.minRead">
-              {{ page.minRead }} MIN READ
+            <span v-if="displayPost.minRead">
+              {{ displayPost.minRead }} MIN READ
             </span>
           </div>
-          <NuxtImg
-            :src="page.image"
-            :alt="page.title"
+          <img
+            v-if="displayPost.image"
+            :src="displayPost.image"
+            :alt="displayPost.title"
             class="rounded-lg w-full h-[300px] object-cover object-center"
-          />
+          >
           <h1 class="text-4xl text-center font-medium max-w-3xl mx-auto mt-4">
-            {{ page.title }}
+            {{ displayPost.title }}
           </h1>
           <p class="text-muted text-center max-w-2xl mx-auto">
-            {{ page.description }}
+            {{ displayPost.description }}
           </p>
-          <div class="flex items-center justify-center gap-2 mt-2">
-            <UUser
-              orientation="vertical"
-              color="neutral"
-              variant="outline"
-              class="justify-center items-center text-center"
-              v-bind="page.author"
-            />
+          <img
+            src="/brand/logo_transparent.png"
+            alt="Logo"
+            class="mx-auto mt-2 h-10 w-10 opacity-60"
+          >
+          <div
+            v-if="displayPost.etiquetas && displayPost.etiquetas.length"
+            class="flex flex-wrap items-center justify-center gap-2 text-xs text-muted"
+          >
+            <span class="font-medium text-foreground">Etiquetas:</span>
+            <div class="flex flex-wrap gap-2">
+              <UBadge
+                v-for="tag in displayPost.etiquetas"
+                :key="tag"
+                color="neutral"
+                variant="subtle"
+                size="xs"
+              >
+                {{ tag }}
+              </UBadge>
+            </div>
+          </div>
+          <div
+            v-if="displayPost.author && !isSupabasePost"
+            class="flex items-center justify-center gap-2 mt-2"
+          >
+            <div class="flex flex-col items-center text-center gap-1 rounded-xl border border-default bg-white/70 dark:bg-black/20 px-4 py-3">
+              <div class="text-sm font-medium text-foreground">
+                {{ displayPost.author.name || displayPost.author.title || 'Author' }}
+              </div>
+              <div
+                v-if="displayPost.author.description"
+                class="text-xs text-muted max-w-xs"
+              >
+                {{ displayPost.author.description }}
+              </div>
+            </div>
           </div>
         </div>
         <UPageBody class="max-w-3xl mx-auto">
+          <div
+            v-if="isPublicationPost"
+            class="markdown-body"
+            v-html="renderedContent"
+          />
+
           <ContentRenderer
-            v-if="page.body"
-            :value="page"
+            v-else-if="contentPage && displayPost.body"
+            :value="contentPage"
           />
 
           <div class="flex items-center justify-end gap-2 text-sm text-muted">
@@ -110,9 +295,96 @@ const formatDate = (dateString: string) => {
               @click="copyToClipboard(articleLink, 'Article link copied to clipboard')"
             />
           </div>
-          <UContentSurround :surround />
+          <UContentSurround
+            v-if="!isPublicationPost"
+            :surround
+          />
         </UPageBody>
+        <div v-if="isPublicationPost" class="mt-10 border-t border-default pt-6 relative">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold">Seguir explorando</h3>
+          </div>
+          <UButton
+            v-if="adjacentPosts?.prev"
+            :to="`/blog/${adjacentPosts.prev.slug}`"
+            icon="lucide:chevron-left"
+            size="sm"
+            color="neutral"
+            variant="outline"
+            class="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 rounded-full"
+          />
+          <UButton
+            v-if="adjacentPosts?.next"
+            :to="`/blog/${adjacentPosts.next.slug}`"
+            icon="lucide:chevron-right"
+            size="sm"
+            color="neutral"
+            variant="outline"
+            class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 rounded-full"
+          />
+          <div class="grid gap-4 md:grid-cols-2">
+            <ULink
+              v-if="adjacentPosts?.prev"
+              :to="`/blog/${adjacentPosts.prev.slug}`"
+              class="block rounded-xl border border-default bg-white/70 dark:bg-black/20 p-4 transition hover:shadow-md"
+            >
+              <p class="text-xs text-muted">Anterior</p>
+              <img
+                v-if="adjacentPosts.prev.image"
+                :src="adjacentPosts.prev.image"
+                :alt="adjacentPosts.prev.title"
+                class="mt-2 h-28 w-full rounded-lg object-cover"
+              >
+              <div class="mt-2 text-base font-medium">
+                {{ adjacentPosts.prev.title }}
+              </div>
+              <p class="text-sm text-muted mt-1">{{ adjacentPosts.prev.resumen }}</p>
+            </ULink>
+            <ULink
+              v-if="adjacentPosts?.next"
+              :to="`/blog/${adjacentPosts.next.slug}`"
+              class="block rounded-xl border border-default bg-white/70 dark:bg-black/20 p-4 transition hover:shadow-md"
+            >
+              <p class="text-xs text-muted">Siguiente</p>
+              <img
+                v-if="adjacentPosts.next.image"
+                :src="adjacentPosts.next.image"
+                :alt="adjacentPosts.next.title"
+                class="mt-2 h-28 w-full rounded-lg object-cover"
+              >
+              <div class="mt-2 text-base font-medium">
+                {{ adjacentPosts.next.title }}
+              </div>
+              <p class="text-sm text-muted mt-1">{{ adjacentPosts.next.resumen }}</p>
+            </ULink>
+          </div>
+        </div>
       </UPage>
     </UContainer>
   </UMain>
 </template>
+
+<style>
+.markdown-body table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.markdown-body th,
+.markdown-body td {
+  border: 1px solid #dfe2e5;
+  padding: 6px 13px;
+}
+.markdown-body img {
+  max-width: 100%;
+  height: auto;
+}
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3 {
+  margin-top: 1.2em;
+  margin-bottom: 0.6em;
+}
+.markdown-body p {
+  margin: 0.6em 0;
+}
+</style>

@@ -19,23 +19,11 @@ useSeoMeta({
   description: 'We are sorry but this page could not be found.'
 })
 
-const [{ data: navigation }, { data: files }] = await Promise.all([
-  useAsyncData('navigation', () => {
-    return Promise.all([
-      queryCollectionNavigation('blog')
-    ])
-  }, {
-    transform: data => data.flat()
-  }),
-  useLazyAsyncData('search', () => {
-    return Promise.all([
-      queryCollectionSearchSections('blog')
-    ])
-  }, {
-    server: false,
-    transform: data => data.flat()
-  })
-])
+const queryNavigation = (...args: any[]) => (queryCollectionNavigation as any)(...args)
+const querySearchSections = (...args: any[]) => (queryCollectionSearchSections as any)(...args)
+
+const navigation = ref([])
+const files = ref([])
 </script>
 
 <template>
