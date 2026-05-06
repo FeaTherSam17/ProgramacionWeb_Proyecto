@@ -24,6 +24,10 @@ export default defineNuxtConfig({
     databaseUrl: process.env.DATABASE_URL || '',
     supabaseDbUrl: process.env.SUPABASE_DB_URL || '',
     dbSsl: process.env.DB_SSL || 'auto',
+    public: {
+      supabaseUrl: process.env.SUPABASE_URL || '',
+      supabaseAnonKey: process.env.SUPABASE_ANON_KEY || ''
+    },
     authSecret: process.env.AUTH_SECRET || process.env.SESSION_SECRET || '',
     authAllowedEmails: process.env.AUTH_ALLOWED_EMAILS || '',
     googleClientId: process.env.GOOGLE_CLIENT_ID || '',

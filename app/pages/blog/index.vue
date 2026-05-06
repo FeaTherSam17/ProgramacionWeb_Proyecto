@@ -1,4 +1,22 @@
 <script setup lang="ts">
+type BlogPost = {
+  id: number
+  title: string
+  description: string
+  image?: string
+  date?: string
+  minRead: number
+  path: string
+  slug: string
+  author: null
+  etiquetas: string[]
+}
+
+type BlogListResponse = {
+  ok: boolean
+  data?: BlogPost[]
+}
+
 const { data: page } = await useAsyncData('blog-page', () => {
   return queryCollection('pages').path('/blog').first()
 })
@@ -9,16 +27,18 @@ if (!page.value) {
     fatal: true
   })
 }
+
 const { data: posts } = await useAsyncData('blogs', () =>
-  queryCollection('blog').order('date', 'DESC').all()
+  $fetch<BlogListResponse>('/api/publicaciones')
 )
-if (!posts.value) {
-  throw createError({
-    statusCode: 404,
-    statusMessage: 'blogs posts not found',
-    fatal: true
-  })
-}
+
+const blogPosts = computed(() => {
+  if (!posts.value || !posts.value.ok) {
+    return [] as BlogPost[]
+  }
+
+  return posts.value.data || []
+})
 
 useSeoMeta({
   title: page.value?.seo?.title || page.value?.title,
@@ -47,7 +67,7 @@ useSeoMeta({
     >
       <UBlogPosts orientation="vertical">
         <Motion
-          v-for="(post, index) in posts"
+          v-for="(post, index) in blogPosts"
           :key="index"
           :initial="{ opacity: 0, transform: 'translateY(10px)' }"
           :while-in-view="{ opacity: 1, transform: 'translateY(0)' }"

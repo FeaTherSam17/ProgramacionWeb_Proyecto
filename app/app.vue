@@ -3,6 +3,20 @@ const colorMode = useColorMode()
 
 const color = computed(() => colorMode.value === 'dark' ? '#270730' : '#fff5ff')
 
+const loadNavigation = () => {
+  const event = useRequestEvent()
+  return event
+    ? (queryCollectionNavigation as any)(event, 'blog')
+    : (queryCollectionNavigation as any)('blog')
+}
+
+const loadSearchSections = () => {
+  const event = useRequestEvent()
+  return event
+    ? (queryCollectionSearchSections as any)(event, 'blog')
+    : (queryCollectionSearchSections as any)('blog')
+}
+
 useHead({
   meta: [
     { charset: 'utf-8' },
@@ -33,14 +47,14 @@ useSeoMeta({
 const [{ data: navigation }, { data: files }] = await Promise.all([
   useAsyncData('navigation', () => {
     return Promise.all([
-      queryCollectionNavigation('blog')
+      loadNavigation()
     ])
   }, {
     transform: data => data.flat()
   }),
   useLazyAsyncData('search', () => {
     return Promise.all([
-      queryCollectionSearchSections('blog')
+      loadSearchSections()
     ])
   }, {
     server: false,
@@ -50,7 +64,7 @@ const [{ data: navigation }, { data: files }] = await Promise.all([
 </script>
 
 <template>
-  <UApp>
+  <div>
     <NuxtLayout>
       <UMain class="relative">
         <NuxtPage />
@@ -66,5 +80,5 @@ const [{ data: navigation }, { data: files }] = await Promise.all([
         :fuse="{ resultLimit: 42 }"
       />
     </ClientOnly>
-  </UApp>
+  </div>
 </template>
