@@ -40,21 +40,31 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const payload = parseBlogPayload(body)
 
-  const result = await sqlQuery<{ id: number }>(
-    `
-      INSERT INTO publicaciones_blog (titulo, slug, resumen, contenido, imagen_portada, estado, publicado_en)
-      VALUES ($1, $2, $3, $4, $5, $6, CASE WHEN $6 = 'publicado' THEN CURRENT_TIMESTAMP ELSE NULL END)
-      RETURNING id
-    `,
-    [
-      payload.titulo,
-      payload.slug,
-      payload.resumen,
-      payload.contenido,
-      payload.imagenPortada,
-      payload.estado
-    ]
-  )
+  let result
+
+  try {
+    result = await sqlQuery<{ id: number }>(
+      `
+        INSERT INTO publicaciones_blog (titulo, slug, resumen, contenido, imagen_portada, estado, publicado_en)
+        VALUES ($1, $2, $3, $4, $5, $6::varchar, CASE WHEN $6::varchar = 'publicado' THEN CURRENT_TIMESTAMP ELSE NULL END)
+        RETURNING id
+      `,
+      [
+        payload.titulo,
+        payload.slug,
+        payload.resumen,
+        payload.contenido,
+        payload.imagenPortada,
+        payload.estado
+      ]
+    )
+  } catch (error: any) {
+    if (error?.code === '23505') {
+      throw createError({ statusCode: 409, statusMessage: 'El slug ya existe. Usa uno diferente.' })
+    }
+
+    throw error
+  }
 
   const postId = result.rows[0]?.id
 

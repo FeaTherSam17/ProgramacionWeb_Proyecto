@@ -47,33 +47,43 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const payload = parseBlogPayload(body)
 
-  const result = await sqlQuery(
-    `
-      UPDATE publicaciones_blog
-      SET
-        titulo = $1,
-        slug = $2,
-        resumen = $3,
-        contenido = $4,
-        imagen_portada = $5,
-        estado = $6,
-        publicado_en = CASE
-          WHEN $6 = 'publicado' AND publicado_en IS NULL THEN CURRENT_TIMESTAMP
-          WHEN $6 <> 'publicado' THEN NULL
-          ELSE publicado_en
-        END
-      WHERE id = $7
-    `,
-    [
-      payload.titulo,
-      payload.slug,
-      payload.resumen,
-      payload.contenido,
-      payload.imagenPortada,
-      payload.estado,
-      id
-    ]
-  )
+  let result
+
+  try {
+    result = await sqlQuery(
+      `
+        UPDATE publicaciones_blog
+        SET
+          titulo = $1,
+          slug = $2,
+          resumen = $3,
+          contenido = $4,
+          imagen_portada = $5,
+          estado = $6::varchar,
+          publicado_en = CASE
+            WHEN $6::varchar = 'publicado' AND publicado_en IS NULL THEN CURRENT_TIMESTAMP
+            WHEN $6::varchar <> 'publicado' THEN NULL
+            ELSE publicado_en
+          END
+        WHERE id = $7
+      `,
+      [
+        payload.titulo,
+        payload.slug,
+        payload.resumen,
+        payload.contenido,
+        payload.imagenPortada,
+        payload.estado,
+        id
+      ]
+    )
+  } catch (error: any) {
+    if (error?.code === '23505') {
+      throw createError({ statusCode: 409, statusMessage: 'El slug ya existe. Usa uno diferente.' })
+    }
+
+    throw error
+  }
 
   if (result.rowCount === 0) {
     throw createError({ statusCode: 404, statusMessage: 'Publicacion no encontrada.' })
