@@ -46,29 +46,50 @@ useSeoMeta({
         <UButton color="neutral" variant="outline" icon="i-lucide-log-out" @click="logout">Cerrar sesion</UButton>
       </div>
     </div>
-
-    <div class="mt-6 rounded-xl border border-default overflow-hidden bg-white/70 dark:bg-black/20">
-      <table class="w-full text-sm">
+    
+    <div class="mt-6 rounded-xl border border-default overflow-x-auto bg-white/70 dark:bg-black/20">
+      <table class="min-w-[1000px] text-sm">
         <thead class="bg-black/5 dark:bg-white/5 text-left">
-          <tr>
-            <th class="px-3 py-2">Nombre</th>
-            <th class="px-3 py-2">Correo</th>
-            <th class="px-3 py-2">Asunto</th>
-            <th class="px-3 py-2">Mensaje</th>
-            <th class="px-3 py-2">Creado</th>
-          </tr>
+        <tr>
+          <th class="px-3 py-2">Nombre</th>
+          <th class="px-3 py-2">Correo</th>
+          <th class="px-3 py-2">Asunto</th>
+          <th class="px-3 py-2">Mensaje</th>
+          <th class="px-3 py-2">Creado</th>
+        </tr>
         </thead>
         <tbody v-if="status !== 'pending'">
           <tr v-for="message in data?.data || []" :key="message.id" class="border-t border-default/50 align-top">
-            <td class="px-3 py-3 font-medium">{{ message.nombre }}</td>
-            <td class="px-3 py-3">
-              <a class="text-[var(--brand-700)] hover:underline" :href="`mailto:${message.correo}`">{{ message.correo }}</a>
+            
+            <td class="px-3 py-3 font-medium whitespace-nowrap">
+              {{ message.nombre }}
             </td>
-            <td class="px-3 py-3">{{ message.asunto }}</td>
-            <td class="px-3 py-3 max-w-[28rem]">
-              <p class="whitespace-pre-wrap text-muted">{{ previewMessage(message.mensaje) }}</p>
+
+            <td class="px-3 py-3 break-words min-w-[220px]">
+              <a class="text-[var(--brand-700)] hover:underline" :href="`mailto:${message.correo}`">
+                {{ message.correo }}
+              </a>
             </td>
-            <td class="px-3 py-3 whitespace-nowrap text-muted">{{ formatDate(message.creado_en) }}</td>
+
+            <td class="px-3 py-3 break-words min-w-[180px]">
+              {{ message.asunto }}
+            </td>
+
+            <td class="px-3 py-3 min-w-[300px]">
+              <p class="line-clamp-3 whitespace-pre-wrap text-muted">
+                {{ previewMessage(message.mensaje) }}
+              </p>
+            </td>
+
+            <td class="px-3 py-3 text-muted text-xs leading-tight whitespace-nowrap">
+              <div>
+                {{ new Date(message.creado_en).toLocaleDateString('es-MX') }}
+              </div>
+              <div class="text-[11px] opacity-70">
+                {{ new Date(message.creado_en).toLocaleTimeString('es-MX') }}
+              </div>
+            </td>
+
           </tr>
 
           <tr v-if="(data?.data || []).length === 0">

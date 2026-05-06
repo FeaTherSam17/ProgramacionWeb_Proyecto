@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { PostEditorData } from '../../../components/admin/PostEditorForm.vue'
-import { splitTags, validatePostEditorData } from '../../../utils/blog-validation'
 
 definePageMeta({ middleware: ['admin'] })
 
@@ -51,7 +50,6 @@ watchEffect(() => {
 const saving = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
-const formErrors = ref<Partial<Record<keyof PostEditorData, string>>>({})
 
 const toPayload = () => ({
   titulo: form.value.titulo,
@@ -60,17 +58,10 @@ const toPayload = () => ({
   contenido: form.value.contenido,
   imagenPortada: form.value.imagenPortada,
   estado: form.value.estado,
-  etiquetas: splitTags(form.value.etiquetasInput)
+  etiquetas: form.value.etiquetasInput.split(',').map(tag => tag.trim()).filter(Boolean)
 })
 
 const onSave = async () => {
-  formErrors.value = validatePostEditorData(form.value)
-
-  if (Object.keys(formErrors.value).length > 0) {
-    errorMessage.value = 'Corrige los campos marcados antes de guardar.'
-    return
-  }
-
   saving.value = true
   errorMessage.value = ''
   successMessage.value = ''
@@ -115,7 +106,6 @@ useSeoMeta({
 
       <AdminPostEditorForm
         v-model="form"
-        :errors="formErrors"
         submit-label="Guardar cambios"
         :loading="saving"
         @submit="onSave"
