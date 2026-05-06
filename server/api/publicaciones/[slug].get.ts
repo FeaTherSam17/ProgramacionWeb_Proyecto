@@ -13,7 +13,7 @@ type PublicPostRow = {
   etiquetas: string[]
 }
 
-type AdjacentPostRow = {
+type AdjacentPost = {
   title: string
   slug: string
   resumen: string | null
@@ -21,42 +21,27 @@ type AdjacentPostRow = {
   date: string
 }
 
-const mapPostRow = (row: PublicPostRow | undefined | null): PublicPostRow | null => {
-  if (!row) {
-    return null
-  }
-
-  return row
+type PublicationPayload = {
+  post: PublicPostRow | null
+  prev: AdjacentPost | null
+  next: AdjacentPost | null
 }
 
-const mapAdjacentRow = (row: PublicPostRow | undefined | null): AdjacentPostRow | null => {
-  if (!row) {
-    return null
+const isValidImageUrl = (value: string | null) => {
+  if (!value) {
+    return false
   }
-
-  return {
-    title: row.titulo,
-    slug: row.slug,
-    resumen: row.resumen || null,
-    image: row.imagen_portada && /^https?:\/\//i.test(row.imagen_portada) ? row.imagen_portada : undefined,
-    date: row.publicado_en || row.creado_en
-  }
+  return /^https?:\/\//i.test(value)
 }
 
-export default defineEventHandler(async (event) => {
-  const slug = String(getRouterParam(event, 'slug') || '').trim()
+export default defineEventHandler(async (event): Promise<PublicationPayload> => {
+  const slug = getRouterParam(event, 'slug')
 
-  if (!slug) {
-    return {
-      ok: true,
-      data: {
-        post: null,
-        prev: null,
-        next: null
-      }
-    }
+  if (!slug || typeof slug !== 'string') {
+    throw createError({ statusCode: 400, statusMessage: 'Slug invalido.' })
   }
 
+  // Obtener el post actual
   const result = await sqlQuery<PublicPostRow>(
     `
       SELECT
@@ -80,76 +65,80 @@ export default defineEventHandler(async (event) => {
     [slug]
   )
 
-  const post = mapPostRow(result.rows[0] || null)
+  const post = result.rows[0] || null
 
   if (!post) {
-    return {
-      ok: true,
-      data: {
-        post: null,
-        prev: null,
-        next: null
-      }
+    throw createError({ statusCode: 404, statusMessage: 'Publicacion no encontrada.' })
+  }
+
+  // Obtener posts anteriores y siguientes para navegación
+  const navResult = await sqlQuery<{
+    slug: string
+    titulo: string
+    resumen: string | null
+    imagen_portada: string | null
+    publicado_en: string | null
+    creado_en: string
+    position: 'prev' | 'next'
+  }>(
+    `
+      WITH ordered_posts AS (
+        SELECT
+          p.id,
+          p.slug,
+          p.titulo,
+          p.resumen,
+          p.imagen_portada,
+          p.publicado_en,
+          p.creado_en,
+          ROW_NUMBER() OVER (ORDER BY COALESCE(p.publicado_en, p.creado_en) DESC, p.id DESC) as rn
+        FROM publicaciones_blog p
+        WHERE p.estado = 'publicado'
+      ),
+      current_post AS (
+        SELECT rn FROM ordered_posts WHERE slug = $1
+      )
+      SELECT
+        p.slug,
+        p.titulo,
+        p.resumen,
+        p.imagen_portada,
+        p.publicado_en,
+        p.creado_en,
+        CASE 
+          WHEN p.rn < (SELECT rn FROM current_post) THEN 'next'
+          ELSE 'prev'
+        END as position
+      FROM ordered_posts p
+      CROSS JOIN current_post cp
+      WHERE (p.rn = cp.rn - 1 OR p.rn = cp.rn + 1)
+      ORDER BY p.rn
+    `,
+    [slug]
+  )
+
+  let prev: AdjacentPost | null = null
+  let next: AdjacentPost | null = null
+
+  for (const row of navResult.rows) {
+    const adjacentPost: AdjacentPost = {
+      title: row.titulo,
+      slug: row.slug,
+      resumen: row.resumen,
+      image: isValidImageUrl(row.imagen_portada) ? row.imagen_portada || undefined : undefined,
+      date: row.publicado_en || row.creado_en
+    }
+
+    if (row.position === 'prev') {
+      prev = adjacentPost
+    } else {
+      next = adjacentPost
     }
   }
 
-  const pivotDate = post.publicado_en || post.creado_en
-
-  const [prevResult, nextResult] = await Promise.all([
-    sqlQuery<PublicPostRow>(
-      `
-        SELECT
-          p.id,
-          p.titulo,
-          p.slug,
-          p.resumen,
-          p.contenido,
-          p.imagen_portada,
-          p.estado,
-          p.publicado_en,
-          p.creado_en,
-          COALESCE(array_remove(array_agg(e.nombre), NULL), '{}') AS etiquetas
-        FROM publicaciones_blog p
-        LEFT JOIN publicaciones_etiquetas pe ON pe.publicacion_id = p.id
-        LEFT JOIN etiquetas e ON e.id = pe.etiqueta_id
-        WHERE p.estado = 'publicado' AND p.publicado_en > $1
-        GROUP BY p.id
-        ORDER BY p.publicado_en ASC
-        LIMIT 1
-      `,
-      [pivotDate]
-    ),
-    sqlQuery<PublicPostRow>(
-      `
-        SELECT
-          p.id,
-          p.titulo,
-          p.slug,
-          p.resumen,
-          p.contenido,
-          p.imagen_portada,
-          p.estado,
-          p.publicado_en,
-          p.creado_en,
-          COALESCE(array_remove(array_agg(e.nombre), NULL), '{}') AS etiquetas
-        FROM publicaciones_blog p
-        LEFT JOIN publicaciones_etiquetas pe ON pe.publicacion_id = p.id
-        LEFT JOIN etiquetas e ON e.id = pe.etiqueta_id
-        WHERE p.estado = 'publicado' AND p.publicado_en < $1
-        GROUP BY p.id
-        ORDER BY p.publicado_en DESC
-        LIMIT 1
-      `,
-      [pivotDate]
-    )
-  ])
-
   return {
-    ok: true,
-    data: {
-      post,
-      prev: mapAdjacentRow(prevResult.rows[0] || null),
-      next: mapAdjacentRow(nextResult.rows[0] || null)
-    }
+    post,
+    prev,
+    next
   }
 })

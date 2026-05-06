@@ -1,8 +1,5 @@
 <script setup lang="ts">
 import { marked } from 'marked'
-import type { ContentNavigationItem } from '@nuxt/content'
-import { mapContentNavigation } from '@nuxt/ui/utils/content'
-import { findPageBreadcrumb } from '@nuxt/content/utils'
 
 type PublicPost = {
   id: number
@@ -29,18 +26,6 @@ type PublicationPayload = {
   post: PublicPost | null
   prev: AdjacentPost | null
   next: AdjacentPost | null
-}
-
-type DisplayPost = {
-  title: string
-  description: string
-  image?: string
-  date?: string
-  minRead?: number
-  content: string
-  etiquetas: string[]
-  author?: any
-  body?: any
 }
 
 marked.setOptions({
@@ -82,11 +67,7 @@ const toSafeImage = (value: string | null): string | undefined => {
 
 const { data: publication } = await useAsyncData<PublicationPayload>(`publication-${slug.value}`, async () => {
   if (!slug.value) {
-    return {
-      post: null,
-      prev: null,
-      next: null
-    }
+    throw createError({ statusCode: 400, statusMessage: 'Slug invalido' })
   }
 
   try {
@@ -94,71 +75,33 @@ const { data: publication } = await useAsyncData<PublicationPayload>(`publicatio
   } catch (error) {
     console.error('Error cargando publicacion publica:', error)
     errorMessage.value = 'No se pudo cargar la publicación.'
-    return {
-      post: null,
-      prev: null,
-      next: null
-    }
+    throw createError({ statusCode: 404, statusMessage: 'Publicacion no encontrada' })
   }
 })
 
-const { data: pageList } = await useAsyncData<any[]>(`blog-pages`, () =>
-  (queryCollection as any)('blog').all()
-)
-
-const page = computed<any>(() => pageList.value?.find((item: any) => item.path === route.path) || null)
-const navigation = inject<Ref<ContentNavigationItem[]>>('navigation', ref([]))
-const blogNavigation = computed(() => navigation.value.find(item => item.path === '/blog')?.children || [])
-const breadcrumb = computed(() => mapContentNavigation(findPageBreadcrumb(blogNavigation?.value, page.value?.path)).map(({ icon, ...link }) => link))
-
 const publicationPost = computed(() => publication.value?.post || null)
-const isPublicationPost = computed(() => Boolean(publicationPost.value))
-const contentPage = computed<any>(() => (page.value ? page.value : null))
 const renderedContent = computed(() => {
   if (!publicationPost.value?.contenido) {
     return ''
   }
-
   return marked(publicationPost.value.contenido)
 })
 
-const emptyDisplayPost: DisplayPost = {
-  title: '',
-  description: '',
-  content: '',
-  etiquetas: []
-}
-
-const displayPost = computed<DisplayPost>(() => {
-  if (publicationPost.value) {
-    const image = toSafeImage(publicationPost.value.imagen_portada)
-    return {
-      title: publicationPost.value.titulo,
-      description: publicationPost.value.resumen || '',
-      image,
-      date: publicationPost.value.publicado_en || publicationPost.value.creado_en,
-      content: publicationPost.value.contenido || '',
-      etiquetas: publicationPost.value.etiquetas || [],
-      minRead: estimateReadTime(publicationPost.value.contenido || '')
-    }
+const displayPost = computed(() => {
+  if (!publicationPost.value) {
+    return null
   }
 
-  if (page.value) {
-    const image = typeof page.value.image === 'string' ? page.value.image : undefined
-    return {
-      title: page.value.title,
-      description: page.value.description,
-      image,
-      date: page.value.date,
-      minRead: page.value.minRead,
-      author: page.value.author,
-      body: page.value.body,
-      etiquetas: [],
-      content: ''
-    }
+  const image = toSafeImage(publicationPost.value.imagen_portada)
+  return {
+    title: publicationPost.value.titulo,
+    description: publicationPost.value.resumen || '',
+    image,
+    date: publicationPost.value.publicado_en || publicationPost.value.creado_en,
+    content: publicationPost.value.contenido || '',
+    etiquetas: publicationPost.value.etiquetas || [],
+    minRead: estimateReadTime(publicationPost.value.contenido || '')
   }
-
-  return emptyDisplayPost
 })
 
 const adjacentPosts = computed(() => {
@@ -168,9 +111,8 @@ const adjacentPosts = computed(() => {
   }
 })
 
-const hasDisplayPost = computed(() => Boolean(publicationPost.value || page.value))
-const title = computed(() => displayPost.value?.title || page.value?.title)
-const description = computed(() => displayPost.value?.description || page.value?.description)
+const title = computed(() => displayPost.value?.title)
+const description = computed(() => displayPost.value?.description)
 
 useSeoMeta({
   title: title.value,
@@ -188,16 +130,12 @@ const formatDate = (dateString: string) => {
     day: 'numeric'
   })
 }
-
-if (!hasDisplayPost.value && !errorMessage.value) {
-  throw createError({ statusCode: 404, statusMessage: 'Page not found', fatal: true })
-}
 </script>
 
 <template>
   <UMain class="mt-20 px-2">
     <UContainer class="relative min-h-screen">
-      <UPage v-if="hasDisplayPost">
+      <div v-if="displayPost">
         <ULink
           to="/blog"
           class="text-sm flex items-center gap-1"
@@ -257,33 +195,11 @@ if (!hasDisplayPost.value && !errorMessage.value) {
               </UBadge>
             </div>
           </div>
-          <div
-            v-if="displayPost.author && !isSupabasePost"
-            class="flex items-center justify-center gap-2 mt-2"
-          >
-            <div class="flex flex-col items-center text-center gap-1 rounded-xl border border-default bg-white/70 dark:bg-black/20 px-4 py-3">
-              <div class="text-sm font-medium text-foreground">
-                {{ displayPost.author.name || displayPost.author.title || 'Author' }}
-              </div>
-              <div
-                v-if="displayPost.author.description"
-                class="text-xs text-muted max-w-xs"
-              >
-                {{ displayPost.author.description }}
-              </div>
-            </div>
-          </div>
         </div>
         <UPageBody class="max-w-3xl mx-auto">
           <div
-            v-if="isPublicationPost"
             class="markdown-body"
             v-html="renderedContent"
-          />
-
-          <ContentRenderer
-            v-else-if="contentPage && displayPost.body"
-            :value="contentPage"
           />
 
           <div class="flex items-center justify-end gap-2 text-sm text-muted">
@@ -295,12 +211,8 @@ if (!hasDisplayPost.value && !errorMessage.value) {
               @click="copyToClipboard(articleLink, 'Article link copied to clipboard')"
             />
           </div>
-          <UContentSurround
-            v-if="!isPublicationPost"
-            :surround
-          />
         </UPageBody>
-        <div v-if="isPublicationPost" class="mt-10 border-t border-default pt-6 relative">
+        <div class="mt-10 border-t border-default pt-6 relative">
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold">Seguir explorando</h3>
           </div>
@@ -359,7 +271,7 @@ if (!hasDisplayPost.value && !errorMessage.value) {
             </ULink>
           </div>
         </div>
-      </UPage>
+      </div>
     </UContainer>
   </UMain>
 </template>
