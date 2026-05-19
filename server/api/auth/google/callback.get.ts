@@ -1,5 +1,6 @@
 import { setAdminSession } from '../../../utils/auth-session'
 import { isEmailAllowed } from '../../../utils/auth'
+import { verifyOAuthState } from '../../../utils/oauth-state'
 
 type GoogleTokenResponse = {
   access_token?: string
@@ -37,13 +38,10 @@ export default defineEventHandler(async (event) => {
 
   const code = String(query.code || '')
   const state = String(query.state || '')
-  const storedState = getCookie(event, 'oauth_google_state')
 
-  if (!code || !state || !storedState || state !== storedState) {
+  if (!code || !state || !verifyOAuthState(state)) {
     return sendRedirect(event, '/admin/login?error=oauth_state')
   }
-
-  deleteCookie(event, 'oauth_google_state', { path: '/' })
 
   if (!config.googleClientId || !config.googleClientSecret) {
     throw createError({
