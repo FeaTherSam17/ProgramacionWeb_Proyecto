@@ -1,4 +1,4 @@
-export type EstadoPublicacion = 'borrador' | 'publicado' | 'archivado'
+export type EstadoPublicacion = 'borrador' | 'publicado'
 
 export type BlogPayload = {
   titulo: string
@@ -10,7 +10,7 @@ export type BlogPayload = {
   etiquetas?: string[]
 }
 
-const VALID_STATES: EstadoPublicacion[] = ['borrador', 'publicado', 'archivado']
+const VALID_STATES: EstadoPublicacion[] = ['borrador', 'publicado']
 const IMAGE_URL_PATTERN = /^https?:\/\/.+\.(png|jpe?g|gif|webp|avif|svg)(\?.*)?$/i
 
 const countWords = (value: string) => value.trim().split(/\s+/).filter(Boolean).length

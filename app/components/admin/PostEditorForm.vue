@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { marked } from 'marked'
+import { normalizeEstadoPublicacion } from '../../utils/blog-validation'
 
 export type PostEditorData = {
   titulo: string
@@ -7,7 +8,7 @@ export type PostEditorData = {
   resumen: string
   contenido: string
   imagenPortada: string
-  estado: 'borrador' | 'publicado' | 'archivado'
+  estado: 'borrador' | 'publicado'
   etiquetasInput: string
 }
 
@@ -23,12 +24,28 @@ const emit = defineEmits<{
   submit: []
 }>()
 
+const estadoOptions = [
+  { value: 'borrador', label: 'Borrador' },
+  { value: 'publicado', label: 'Publicado' }
+]
+
 const updateField = <K extends keyof PostEditorData>(key: K, value: PostEditorData[K]) => {
   emit('update:modelValue', {
     ...props.modelValue,
     [key]: value
   })
 }
+
+watch(
+  () => props.modelValue.estado,
+  (value) => {
+    const normalized = normalizeEstadoPublicacion(value)
+    if (normalized !== value) {
+      updateField('estado', normalized)
+    }
+  },
+  { immediate: true }
+)
 
 const onSubmit = () => {
   emit('submit')
@@ -144,9 +161,9 @@ const previewTags = computed(() => {
               class="rounded-lg border border-default bg-white/80 dark:bg-black/25 px-3 py-2"
               @change="updateField('estado', ($event.target as HTMLSelectElement).value as PostEditorData['estado'])"
             >
-              <option value="borrador">Borrador</option>
-              <option value="publicado">Publicado</option>
-              <option value="archivado">Archivado</option>
+              <option v-for="option in estadoOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
             </select>
           </label>
         </div>

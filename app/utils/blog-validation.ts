@@ -42,3 +42,7 @@ export const splitTags = (value: string) => {
 }
 
 export const countTextWords = countWords
+
+export const normalizeEstadoPublicacion = (value: string | null | undefined) => {
+  return value === 'publicado' ? 'publicado' : 'borrador'
+}
