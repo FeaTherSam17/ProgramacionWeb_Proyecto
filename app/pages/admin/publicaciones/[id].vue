@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { PostEditorData } from '../../../components/admin/PostEditorForm.vue'
+import { normalizeEstadoPublicacion } from '../../../utils/blog-validation'
 
 definePageMeta({ middleware: ['admin'] })
 
@@ -13,7 +14,7 @@ type PublicacionDetalle = {
   resumen: string | null
   contenido: string
   imagen_portada: string | null
-  estado: 'borrador' | 'publicado' | 'archivado'
+  estado: 'borrador' | 'publicado'
   etiquetas: string[]
 }
 
@@ -42,7 +43,7 @@ watchEffect(() => {
     resumen: post.resumen || '',
     contenido: post.contenido || '',
     imagenPortada: post.imagen_portada || '',
-    estado: post.estado || 'borrador',
+    estado: normalizeEstadoPublicacion(post.estado),
     etiquetasInput: (post.etiquetas || []).join(', ')
   }
 })

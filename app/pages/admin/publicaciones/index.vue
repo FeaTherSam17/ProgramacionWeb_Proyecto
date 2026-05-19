@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { normalizeEstadoPublicacion } from '../../../utils/blog-validation'
+
 definePageMeta({ middleware: ['admin'] })
 
 type Publicacion = {
@@ -6,7 +8,7 @@ type Publicacion = {
   titulo: string
   slug: string
   resumen: string | null
-  estado: 'borrador' | 'publicado' | 'archivado'
+  estado: 'borrador' | 'publicado'
   publicado_en: string | null
   etiquetas: string[]
 }
@@ -81,7 +83,6 @@ useSeoMeta({
         <option value="">Todos los estados</option>
         <option value="borrador">Borrador</option>
         <option value="publicado">Publicado</option>
-        <option value="archivado">Archivado</option>
       </select>
       <UButton color="neutral" variant="outline" @click="() => refresh()">Actualizar</UButton>
     </div>
@@ -103,7 +104,7 @@ useSeoMeta({
               <p class="text-xs text-muted">/{{ post.slug }}</p>
             </td>
             <td class="px-3 py-3">
-              <span class="px-2 py-1 rounded-full border border-default text-xs uppercase">{{ post.estado }}</span>
+              <span class="px-2 py-1 rounded-full border border-default text-xs uppercase">{{ normalizeEstadoPublicacion(post.estado) }}</span>
             </td>
             <td class="px-3 py-3">
               <span class="text-xs text-muted">{{ post.etiquetas.join(', ') || 'Sin etiquetas' }}</span>
