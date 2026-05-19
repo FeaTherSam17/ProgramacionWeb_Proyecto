@@ -44,7 +44,6 @@ export default defineContentConfig({
           links: z.array(createButtonSchema()),
           images: z.array(createImageSchema())
         }),
-        about: createBaseSchema(),
         experience: createBaseSchema().extend({
           items: z.array(z.object({
             date: z.date(),
@@ -117,14 +116,6 @@ export default defineContentConfig({
           location: z.string(),
           url: z.string().optional()
         }))
-      })
-    }),
-    about: defineCollection({
-      type: 'page',
-      source: 'about.yml',
-      schema: z.object({
-        content: z.object({}),
-        images: z.array(createImageSchema())
       })
     })
   }
