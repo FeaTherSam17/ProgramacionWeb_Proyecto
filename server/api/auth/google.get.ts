@@ -36,5 +36,6 @@ export default defineEventHandler(async (event) => {
     state
   })
 
+  setHeader(event, 'Cache-Control', 'no-store, no-cache, max-age=0, must-revalidate')
   return sendRedirect(event, `${GOOGLE_AUTH_URL}?${params.toString()}`)
 })
