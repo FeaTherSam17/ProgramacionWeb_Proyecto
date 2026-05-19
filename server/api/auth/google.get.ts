@@ -24,11 +24,12 @@ export default defineEventHandler(async (event) => {
 
   const callbackUrl = buildCallbackUrl(event)
   const state = crypto.randomUUID()
+  const isProduction = process.env.NODE_ENV === 'production'
 
   setCookie(event, 'oauth_google_state', state, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production', 
-    sameSite: 'lax',
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
     path: '/',
     maxAge: 60 * 10
   })
