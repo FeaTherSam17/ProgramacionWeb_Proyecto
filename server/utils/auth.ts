@@ -5,7 +5,7 @@ export const getAllowedEmails = () => {
   const config = useRuntimeConfig()
 
   return String(config.authAllowedEmails || '')
-    .split(',')
+    .split(/[\s,;]+/)
     .map(email => email.trim().toLowerCase())
     .filter(Boolean)
 }
