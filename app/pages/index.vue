@@ -2,28 +2,29 @@
 useSeoMeta({
   title: 'Inicio',
   ogTitle: 'Inicio',
-  description: 'Plataforma oficial de ViFeather. Música, historias y frecuencias profundas.',
-  ogDescription: 'Plataforma oficial de ViFeather. Música, historias y frecuencias profundas.'
+  description: 'ViFeather - Sitio Oficial. Frecuencias nacidas en la penumbra.',
+  ogDescription: 'ViFeather - Sitio Oficial. Frecuencias nacidas en la penumbra.'
 })
 
-const lore = [
+// El array Lore ahora funciona puramente para la sección conceptual de abajo
+const conceptualLore = [
   {
     title: 'La Esencia',
     description: 'ViFeather habita en el espectro entre lo etéreo y lo industrial. Un ente que se manifiesta en la colisión de texturas melódicas y sombras profundas, definiendo un espacio donde la melancolía encuentra su propia frecuencia.'
   },
   {
-    title: 'Arquitectura Compartida',
-    description: 'Este sonido se construyó sobre cimientos que nacieron en la infancia. Es el resultado de un diálogo creativo de años; una estructura técnica y emocional que hoy se sostiene sobre el eco de lo que alguna vez fue un camino de dos.'
+    title: 'Manifiesto Sonoro',
+    description: 'Una búsqueda constante por traducir el vacío a través de sintetizadores pesados y atmósferas envolventes. La música no solo se escucha; es un paisaje táctil diseñado para perderse en la oscuridad.'
   },
   {
     title: 'Legado en la Sombra',
-    description: 'Inspirado por la influencia de ERAVFT, el proyecto rescata visiones que quedaron suspendidas en el tiempo. Es la continuación de una narrativa que se niega a desaparecer, transformando el silencio de otros en nuevas formas de energía.'
+    description: 'El proyecto rescata visiones que quedaron suspendidas en el tiempo. Es la continuación de una narrativa que se niega a desaparecer, transformando el silencio y los ecos del pasado en nuevas formas de energía.'
   }
 ]
 </script>
 
 <template>
-  <div class="home-page px-4 md:px-8">
+  <div class="home-page px-4 md:px-8 max-w-[1400px] mx-auto">
     
     <section class="hero-shell">
       <div class="hero-bg-glow" />
@@ -44,29 +45,29 @@ const lore = [
           />
 
           <p class="hero-kicker">
-            Music | Blog | YouTube | Contacto
+            Biografía | ViFeather
           </p>
           
           <h1 class="hero-title">
-            Frecuencias nacidas en la penumbra: donde el ruido se transforma en nostalgia.
+            Biografía
           </h1>
           
-          <p class="hero-description">
-            Casi cinco años de evolución sonora atrapados entre la euforia del colour bass y el frío del dark ambient. Este espacio resguarda las historias y los ecos de un trayecto creativo que se niega a desvanecerse en el silencio.
+          <p class="hero-description text-justify">
+            Detrás de ViFeather habitan casi cinco años de exploración entre el colour bass y el dark ambient. La identidad de este sonido nació de un lazo creativo y una visión compartida con ERAVFT. Aunque el tiempo ha transformado los caminos y hoy no existen rastros públicos de aquella alianza, el impacto de ese diálogo inicial define la base del proyecto. ViFeather continúa hoy su viaje en solitario desde la penumbra, rescatando las visiones suspendidas en el pasado para transformarlas en nuevas corrientes de energía.
           </p>
 
           <div class="hero-actions">
             <UButton
               size="xl"
               to="/music"
-              label="Explorar Music"
+              label="Escuchar Música"
               class="hero-primary-btn"
             />
             <UButton
               size="xl"
               variant="outline"
               to="/youtube"
-              label="Ver YouTube"
+              label="Ver Canal de YouTube"
               class="hero-secondary-btn"
             />
           </div>
@@ -79,51 +80,51 @@ const lore = [
           :transition="{ duration: 0.55, delay: 0.12 }"
         >
           <p class="panel-overline">
-            Experiencia Pública
+            Ecos del Trayecto
           </p>
           <h2 class="panel-title">
-            Navegación clara, contenido conectado
+            Dimensiones del Proyecto
           </h2>
 
           <ul class="panel-list">
             <li>
               <span class="panel-dot" />
-              Rutas principales para fans: Home, Music, Blog, YouTube y Contacto
+              <strong>Simbiosis Creativa:</strong> Cimientos artísticos construidos sobre una historia compartida.
             </li>
             <li>
               <span class="panel-dot" />
-              Contenido organizado por módulos para crecer sin desorden
+              <strong>Identidad Sonora:</strong> Contraste entre texturas melódicas profundas y rítmicas industriales.
             </li>
             <li>
               <span class="panel-dot" />
-              Base lista para habilitar panel admin de publicaciones
+              <strong>Narrativa Abierta:</strong> Un canal para resguardar las historias que el tiempo dejó en pausa.
             </li>
           </ul>
         </Motion>
       </UContainer>
     </section>
 
-    <section class="py-12 border-t border-white/5">
+    <section class="py-16 border-t border-white/5">
       <UContainer class="grid grid-cols-1 md:grid-cols-3 gap-12 items-start">
         
-        <div class="space-y-2">
+        <div class="space-y-2 md:sticky md:top-8">
           <p class="section-label">El Universo</p>
-          <h2 class="text-3xl md:text-4xl font-serif tracking-tight uppercase">Más allá de la superficie</h2>
+          <h2 class="text-3xl md:text-4xl font-serif tracking-tight uppercase leading-tight">Más allá de la superficie</h2>
         </div>
 
-        <div class="md:col-span-2 space-y-8">
+        <div class="md:col-span-2 space-y-10">
           <div 
-            v-for="(item, index) in lore" 
+            v-for="(item, index) in conceptualLore" 
             :key="item.title"
-            class="space-y-2"
+            class="space-y-3"
           >
             <Motion
-              :initial="{ opacity: 0, x: 25 }"
+              :initial="{ opacity: 0, x: 30 }"
               :animate="{ opacity: 1, x: 0 }"
-              :transition="{ duration: 0.45, delay: 0.08 * index }"
+              :transition="{ duration: 0.5, delay: 0.08 * index }"
             >
-              <h3 class="text-xl font-serif text-purple-400 font-semibold">{{ item.title }}</h3>
-              <p class="text-white/80 leading-relaxed text-base md:text-lg">{{ item.description }}</p>
+              <h3 class="text-xl font-serif text-purple-400 font-medium tracking-wide">{{ item.title }}</h3>
+              <p class="text-white/80 leading-relaxed text-base md:text-lg font-light">{{ item.description }}</p>
             </Motion>
           </div>
         </div>
@@ -131,31 +132,22 @@ const lore = [
       </UContainer>
     </section>
 
-    <section class="py-12 border-t border-white/5">
+    <section class="py-16 border-t border-white/5">
       <UContainer class="grid grid-cols-1 md:grid-cols-5 gap-12 items-center">
         
         <div class="md:col-span-2 space-y-6">
           <div>
-            <p class="section-label">Identidad Visual</p>
-            <h2 class="text-3xl font-serif uppercase tracking-tight">Elementos de la marca</h2>
+            <p class="section-label">Estética y Visión</p>
+            <h2 class="text-3xl font-serif uppercase tracking-tight mt-2">Atmósfera Visual</h2>
           </div>
           
           <div class="space-y-4">
-            <article class="flex gap-4 items-center p-4 bg-white/5 rounded-xl border border-white/10">
-              <NuxtImg src="/brand/vf-logo.png" alt="VF Logo" width="48" height="48" class="brand-logo shrink-0" />
-              <div>
-                <h3 class="font-serif text-lg font-medium">Sello Principal</h3>
-                <p class="text-sm text-white/70">Reconocimiento visual aplicado en portadas y puntos clave.</p>
-              </div>
-            </article>
-
-            <article class="flex gap-4 items-center p-4 bg-white/5 rounded-xl border border-white/10">
-              <NuxtImg src="/brand/vf-logo.png" alt="VF Logo" width="48" height="48" class="brand-logo shrink-0" />
-              <div>
-                <h3>Firma de Sección</h3>
-                <p class="text-sm text-white/70">Acento visual e iconografía integrado en el ecosistema.</p>
-              </div>
-            </article>
+            <p class="text-white/80 leading-relaxed text-base">
+              La identidad visual se sumerge en una propuesta poética y oscura. Una paleta dominada por tonalidades púrpuras, azules y magentas envuelve el misterio que rodea a cada producción.
+            </p>
+            <p class="text-white/80 leading-relaxed text-base">
+              Más allá de lo sonoro, cada elemento existe para dar forma y textura a las frecuencias, consolidando un entorno donde la melancolía encuentra su propia expresión visual.
+            </p>
           </div>
         </div>
 
@@ -168,10 +160,11 @@ const lore = [
           >
             <NuxtImg 
               src="/brand/character-visual.png" 
-              alt="Visual Aesthetic Display" 
+              alt="Visual Aesthetic Display of ViFeather" 
               class="w-full h-full object-cover grayscale-[10%] contrast-[105%]"
             />
-            <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
+            
+            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent pointer-events-none" />
           </Motion>
         </div>
 
@@ -182,5 +175,5 @@ const lore = [
 </template>
 
 <style scoped>
-/* Completamente limpio para heredar tus fuentes Cinzel/Playfair y colores de Kigen */
+/* Sin CSS duro para mantener intactos tus gradientes y variables globales de Kigen */
 </style>
