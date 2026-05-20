@@ -23,13 +23,19 @@ export default defineNuxtConfig({
 
   routeRules: {
     '/admin': {
+      ssr: true,
+      swr: false,
+      cache: false,
       headers: {
-        'cache-control': 'no-store'
+        'Cache-Control': 'private, no-store, no-cache, max-age=0, must-revalidate'
       }
     },
     '/admin/**': {
+      ssr: true,
+      swr: false,
+      cache: false,
       headers: {
-        'cache-control': 'no-store'
+        'Cache-Control': 'private, no-store, no-cache, max-age=0, must-revalidate'
       }
     }
   },
