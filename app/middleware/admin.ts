@@ -5,12 +5,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   const headers = import.meta.server ? useRequestHeaders(['cookie']) : undefined
 
-  const { data } = await useFetch('/api/auth/session', {
-    key: `admin-session-${to.path}`,
-    headers
+  const session = await $fetch<{ ok: boolean }>('/api/auth/session', {
+    headers,
+    credentials: import.meta.server ? undefined : 'include'
   })
 
-  if (!data.value?.ok) {
+  if (!session.ok) {
     return navigateTo('/admin/login')
   }
 })
