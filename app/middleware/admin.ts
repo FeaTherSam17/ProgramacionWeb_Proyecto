@@ -9,7 +9,9 @@ export default defineNuxtRouteMiddleware(async (to: any) => {
     return
   }
 
-  const session = typeof window === 'undefined'
+  const isServer = typeof window === 'undefined'
+  
+  const session = isServer
     ? await (async () => {
         // On server, ensure admin pages are not cached by CDN or browser
         try {
@@ -22,16 +24,23 @@ export default defineNuxtRouteMiddleware(async (to: any) => {
         }
 
         const headers = useRequestHeaders ? useRequestHeaders(['cookie']) : undefined
+        console.log('[admin.middleware] SSR - cookies:', headers?.cookie ? 'PRESENT' : 'MISSING')
 
-        return await $fetch('/api/auth/session', {
+        const result = await $fetch('/api/auth/session', {
           headers
         })
+        
+        console.log('[admin.middleware] SSR - session response:', result?.ok ? 'OK' : 'FAIL')
+        return result
       })()
     : await $fetch('/api/auth/session', {
         credentials: 'include'
       })
 
+  console.log(`[admin.middleware] ${isServer ? 'SSR' : 'CLIENT'} - session?.ok: ${session?.ok}`)
+  
   if (!session?.ok) {
+    console.log(`[admin.middleware] Session invalid, redirecting to /admin/login`)
     return navigateTo('/admin/login')
   }
 })
