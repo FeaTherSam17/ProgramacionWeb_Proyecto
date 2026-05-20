@@ -21,6 +21,19 @@ export default defineNuxtConfig({
     url: process.env.NUXT_SITE_URL || process.env.NUXT_PUBLIC_SITE_URL || 'https://example.com'
   },
 
+  routeRules: {
+    '/admin': {
+      headers: {
+        'cache-control': 'no-store'
+      }
+    },
+    '/admin/**': {
+      headers: {
+        'cache-control': 'no-store'
+      }
+    }
+  },
+
   runtimeConfig: {
     databaseUrl: process.env.DATABASE_URL || '',
     supabaseDbUrl: process.env.SUPABASE_DB_URL || '',
