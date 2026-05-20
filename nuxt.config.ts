@@ -22,6 +22,14 @@ export default defineNuxtConfig({
   },
 
   routeRules: {
+    '/api/auth/**': {
+      ssr: true,
+      swr: false,
+      cache: false,
+      headers: {
+        'Cache-Control': 'private, no-store, no-cache, max-age=0, must-revalidate'
+      }
+    },
     '/admin': {
       ssr: true,
       swr: false,
