@@ -5,7 +5,8 @@ type OAuthStatePayload = {
   exp: number
 }
 
-const OAUTH_STATE_MAX_AGE_SECONDS = 60 * 10
+const OAUTH_STATE_MAX_AGE_SECONDS = 60 * 30
+const OAUTH_STATE_CLOCK_SKEW_SECONDS = 60
 
 const toBase64Url = (value: string) => Buffer.from(value, 'utf8').toString('base64url')
 const fromBase64Url = (value: string) => Buffer.from(value, 'base64url').toString('utf8')
@@ -60,7 +61,9 @@ export const verifyOAuthState = (state: string) => {
 
     const payload = JSON.parse(fromBase64Url(payloadBase64)) as OAuthStatePayload
 
-    return Boolean(payload.exp && payload.exp >= Math.floor(Date.now() / 1000) && payload.nonce)
+    const now = Math.floor(Date.now() / 1000)
+
+    return Boolean(payload.exp && payload.exp + OAUTH_STATE_CLOCK_SKEW_SECONDS >= now && payload.nonce)
   } catch {
     return false
   }

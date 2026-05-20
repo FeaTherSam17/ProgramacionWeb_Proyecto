@@ -39,12 +39,7 @@ export default defineEventHandler(async (event) => {
   const code = String(query.code || '')
   const state = String(query.state || '')
 
-  console.log('[oauth-callback] Received state length:', state.length, 'code length:', code.length)
-  const isStateValid = verifyOAuthState(state)
-  console.log('[oauth-callback] State valid?:', isStateValid)
-
-  if (!code || !state || !isStateValid) {
-    console.log('[oauth-callback] OAuth validation failed - redirecting to login')
+  if (!code || !state || !verifyOAuthState(state)) {
     return sendRedirect(event, '/admin/login?error=oauth_state')
   }
 
