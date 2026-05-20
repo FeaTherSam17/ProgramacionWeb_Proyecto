@@ -77,13 +77,15 @@ export const setAdminSession = (event: H3Event, session: Omit<SessionPayload, 'e
 
   const token = createToken(payload)
 
-  setCookie(event, AUTH_COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: SESSION_MAX_AGE_SECONDS
-  })
+    setCookie(event, AUTH_COOKIE_NAME, token, {
+      httpOnly: true,
+      secure: !import.meta.env.DEV,
+      // Use lax locally for easier dev flows; in production use None so cookie is
+      // accepted on OAuth cross-site redirects (requires Secure).
+      sameSite: import.meta.env.DEV ? 'lax' : 'none',
+      path: '/',
+      maxAge: SESSION_MAX_AGE_SECONDS
+    })
 }
 
 export const clearAdminSession = (event: H3Event) => {

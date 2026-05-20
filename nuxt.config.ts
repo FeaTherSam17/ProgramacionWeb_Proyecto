@@ -17,7 +17,8 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
 
   site: {
-    url: process.env.NUXT_SITE_URL || 'https://example.com'
+    // Prefer explicit production site url, fall back to public url env var if present
+    url: process.env.NUXT_SITE_URL || process.env.NUXT_PUBLIC_SITE_URL || 'https://example.com'
   },
 
   runtimeConfig: {
