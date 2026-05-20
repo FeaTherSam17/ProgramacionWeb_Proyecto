@@ -1,7 +1,7 @@
 declare const defineNuxtRouteMiddleware: any
-declare const useRequestFetch: any
 declare const $fetch: any
 declare const useRequestEvent: any
+declare const useRequestHeaders: any
 declare const setHeader: any
 
 export default defineNuxtRouteMiddleware(async (to: any) => {
@@ -21,7 +21,11 @@ export default defineNuxtRouteMiddleware(async (to: any) => {
           // ignore
         }
 
-        return await useRequestFetch()('/api/auth/session')
+        const headers = useRequestHeaders ? useRequestHeaders(['cookie']) : undefined
+
+        return await $fetch('/api/auth/session', {
+          headers
+        })
       })()
     : await $fetch('/api/auth/session', {
         credentials: 'include'
