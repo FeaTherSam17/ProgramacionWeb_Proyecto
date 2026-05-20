@@ -23,6 +23,7 @@ export default defineNuxtConfig({
 
   routeRules: {
     '/api/auth/**': {
+      prerender: false,
       ssr: true,
       swr: false,
       cache: false,
@@ -31,6 +32,7 @@ export default defineNuxtConfig({
       }
     },
     '/admin': {
+      prerender: false,
       ssr: true,
       swr: false,
       cache: false,
@@ -39,6 +41,7 @@ export default defineNuxtConfig({
       }
     },
     '/admin/**': {
+      prerender: false,
       ssr: true,
       swr: false,
       cache: false,
@@ -80,7 +83,7 @@ export default defineNuxtConfig({
       routes: [
         '/'
       ],
-      crawlLinks: true
+      crawlLinks: false
     }
   },
 
