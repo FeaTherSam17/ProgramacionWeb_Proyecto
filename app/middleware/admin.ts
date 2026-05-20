@@ -1,16 +1,19 @@
-export default defineNuxtRouteMiddleware(async (to) => {
+declare const defineNuxtRouteMiddleware: any
+declare const useRequestFetch: any
+declare const $fetch: any
+
+export default defineNuxtRouteMiddleware(async (to: any) => {
   if (to.path === '/admin/login') {
     return
   }
 
-  const headers = import.meta.server ? useRequestHeaders(['cookie']) : undefined
+  const session = typeof window === 'undefined'
+    ? await useRequestFetch()('/api/auth/session')
+    : await $fetch('/api/auth/session', {
+        credentials: 'include'
+      })
 
-  const session = await $fetch<{ ok: boolean }>('/api/auth/session', {
-    headers,
-    credentials: import.meta.server ? undefined : 'include'
-  })
-
-  if (!session.ok) {
+  if (!session?.ok) {
     return navigateTo('/admin/login')
   }
 })
