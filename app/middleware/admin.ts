@@ -10,7 +10,7 @@ export default defineNuxtRouteMiddleware(async (to: any) => {
   }
 
   const session = typeof window === 'undefined'
-    ? (async () => {
+    ? await (async () => {
         // On server, ensure admin pages are not cached by CDN or browser
         try {
           const ev = useRequestEvent && useRequestEvent()
